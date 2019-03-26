@@ -6,7 +6,7 @@ require "csv"
 
 def write_new_csv
   CSV.open(@csv, "wb") do |csv|
-    csv << %w(downstream_snr upstream_snr downstream_attn upstream_attn downstream_power upstream_power dsl_line_status dsl_uptime retrains_in_24h loss_of_power_link_failures loss_of_signal_link_failures loss_of_margin_link_failures link_train_errors unavailable_seconds near_end_crc_errors far_end_crc_errors near_end_crc_30_minute far_end_crc_30_minute near_end_fec_corrections far_end_fec_corrections near_end_fec_30_minute far_end_fec_30_minute internet_status timestamp)
+    csv << %w(downstream_snr upstream_snr downstream_attn upstream_attn downstream_power upstream_power dsl_line_status dsl_uptime retrains_in_24h loss_of_power_link_failures loss_of_signal_link_failures loss_of_margin_link_failures link_train_errors unavailable_seconds near_end_crc_errors far_end_crc_errors near_end_crc_30_minute far_end_crc_30_minute near_end_fec_corrections far_end_fec_corrections near_end_fec_30_minute far_end_fec_30_minute internet_status manually_tested_internet_status timestamp)
   end
 end
 
@@ -97,6 +97,11 @@ def generate_stats
   allStatus = @modem_status_page.text.match(/allStatus = \"(.*)\"/)[1].split("||")
   internet_status = allStatus[2]
 
+  # Finally, let's actually check the connection ourselves because many
+  # times the modem will say "CONNECTED" but it isn't
+  result = `ping -q -c 1 8.8.8.8`
+  connected = $?.exitstatus == 0
+
   puts "downstream_snr: #{downstream_snr}"
   puts "upstream_snr: #{upstream_snr}"
   puts "downstream_attn: #{downstream_attn}"
@@ -120,6 +125,7 @@ def generate_stats
   puts "near_end_fec_30_minute: #{near_end_fec_30_minute}"
   puts "far_end_fec_30_minute: #{far_end_fec_30_minute}"
   puts "internet_status: #{internet_status}"
+  puts "manually_tested_internet_status: #{connected}"
   puts "time_stamp: #{Time.now.to_s}"
 
   generate_csv(
@@ -130,7 +136,7 @@ def generate_stats
      near_end_crc_errors, far_end_crc_errors, near_end_crc_30_minute,
      far_end_crc_30_minute, near_end_fec_corrections, far_end_fec_corrections,
      near_end_fec_30_minute, far_end_fec_30_minute, internet_status,
-     Time.now.to_s]
+     connected, Time.now.to_s]
   )
 end
 
